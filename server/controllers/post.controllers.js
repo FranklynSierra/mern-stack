@@ -33,17 +33,35 @@ return res.json(newPost)
   return res.status(500).json({message:error.message})
 }
 }
-export const updatePost=async(req,res)=>{
-try {
- 
-  const updatePost=await Post.findByIdAndUpdate(req.params.id,req.body,{new:true})
- 
+export const updatePost = async (req, res) => {
+  try {
+    
+    const { id } = req.params;
+   
 
- return res.send(updatePost)
-} catch (error) {
-  return res.status(500).json({message:error.message})
-}
-}
+    // if a new image is uploaded upload it to cloudinary
+    if (req.files?.image) {
+      const result = await uploadImage(req.files.image.tempFilePath);
+      await fs.remove(req.files.image.tempFilePath);
+      // add the new image to the req.body
+      req.body.image = {
+        url: result.secure_url,
+        public_id: result.public_id,
+      };
+    }
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      id,
+      { $set: req.body },
+      {
+        new: true,
+      }
+    );
+    return res.json(updatedPost);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 export const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
